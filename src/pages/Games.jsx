@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { searchGames } from "../services/rawg.js";
 import SearchBar from "../components/SearchBar.jsx";
-import Loader from "../components/loader.jsx";
+import Loader from "../components/Loader.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
 import GameCard from "../components/GameCard.jsx";
 import Pagination from "../components/pagination.jsx";

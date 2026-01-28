@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getGameDetails } from "../services/rawg.js";
-import Loader from "../components/loader.jsx";
+import Loader from "../components/Loader.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
 
 function stripHtml(html) {
