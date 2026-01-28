@@ -4,7 +4,7 @@ import SearchBar from "../components/SearchBar.jsx";
 import Loader from "../components/Loader.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
 import GameCard from "../components/GameCard.jsx";
-import Pagination from "../components/pagination.jsx";
+import Pagination from "../components/Pagination.jsx";
 
 export default function Games() {
   const [query, setQuery] = useState("");
