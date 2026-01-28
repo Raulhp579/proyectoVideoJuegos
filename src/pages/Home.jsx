@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getPopularGames } from "../services/rawg.js";
-import {Loader} from "../components/Loader.jsx";
+import Loader from "../components/Loader.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
 import GameCarousel from "../components/GameCarrusel.jsx";
 
