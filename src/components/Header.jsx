@@ -10,7 +10,7 @@ function LinkItem({ to, children }) {
           "px-3 py-2 rounded-xl text-sm font-medium transition",
           isActive
             ? "bg-zinc-800 text-white"
-            : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
+            : "text-zinc-300 hover:bg-zinc-900 hover:text-white",
         ].join(" ")
       }
     >
@@ -91,10 +91,11 @@ export default function Header() {
         <nav className="ml-auto flex items-center gap-2">
           <LinkItem to="/">Inicio</LinkItem>
           <LinkItem to="/games">Videojuegos</LinkItem>
+          <LinkItem to="/publishers">Publishers</LinkItem>
 
           {/* Favoritos */}
           <NavLink
-            to="/games"
+            to="/games?favorites=true"
             className="ml-1 inline-flex items-center gap-2 rounded-2xl border border-zinc-800 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-600 transition"
             title="Favoritos guardados"
           >

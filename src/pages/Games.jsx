@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { searchGames } from "../services/rawg.js";
 import SearchBar from "../components/SearchBar.jsx";
 import Loader from "../components/Loader.jsx";
@@ -7,9 +8,18 @@ import GameCard from "../components/GameCard.jsx";
 import Pagination from "../components/Pagination.jsx";
 
 export default function Games() {
-  const [query, setQuery] = useState("");
-  const [submitted, setSubmitted] = useState("");
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const page = Number(searchParams.get("page")) || 1;
+  const submitted = searchParams.get("search") || "";
+  const genres = searchParams.get("genres");
+  const tags = searchParams.get("tags");
+  const publishers = searchParams.get("publishers");
+  // Check if favorites filters is active
+  const isFavorites = searchParams.get("favorites") === "true";
+
+  // Input local para el buscador
+  const [inputValue, setInputValue] = useState(submitted);
 
   const [data, setData] = useState({ results: [], count: 0 });
   const [loading, setLoading] = useState(true);
@@ -23,14 +33,47 @@ export default function Games() {
     return page * pageSize < total;
   }, [data, page]);
 
+  // Sincronizar input si cambia la URL (por ejemplo navegando atrás)
+  useEffect(() => {
+    setInputValue(submitted);
+  }, [submitted]);
+
   useEffect(() => {
     let alive = true;
 
     async function load() {
       setLoading(true);
       setErr("");
+
+      let idsToFetch = null;
+      if (isFavorites) {
+        try {
+          const raw = localStorage.getItem("fav_games_v1");
+          const ids = raw ? JSON.parse(raw) : [];
+          if (!ids.length) {
+            // Si no hay favoritos, no llamamos a la API o devolvemos vacío directamente
+            if (alive) {
+              setData({ results: [], count: 0 });
+              setLoading(false);
+            }
+            return;
+          }
+          idsToFetch = ids.join(",");
+        } catch {
+          // error parsing
+        }
+      }
+
       try {
-        const res = await searchGames({ query: submitted, page, pageSize });
+        const res = await searchGames({
+          query: submitted,
+          page,
+          pageSize,
+          genres,
+          tags,
+          publishers,
+          ids: idsToFetch,
+        });
         if (!alive) return;
         setData({ results: res.results || [], count: res.count || 0 });
       } catch (e) {
@@ -45,12 +88,42 @@ export default function Games() {
     return () => {
       alive = false;
     };
-  }, [submitted, page]);
+  }, [submitted, page, genres, tags, publishers, isFavorites]);
 
   function doSearch() {
-    setPage(1);
-    setSubmitted(query.trim());
+    // Al buscar, reseteamos a página 1 y mantenemos filtros si quisieramos,
+    // pero lo habitual es limpiar filtros o mantenerlos. Aquí limpiaré filtros para búsqueda nueva simple.
+    // Si quieres mantener filtros: ...searchParams, search: inputValue.trim(), page: 1
+    const newParams = { search: inputValue.trim(), page: 1 };
+
+    // Si queremos mantener los filtros al buscar, descomenta estas líneas:
+    // if (genres) newParams.genres = genres;
+    // if (tags) newParams.tags = tags;
+    // if (publishers) newParams.publishers = publishers;
+
+    setSearchParams(newParams);
   }
+
+  function handlePageChange(newPage) {
+    const newParams = { page: newPage };
+    if (submitted) newParams.search = submitted;
+    if (genres) newParams.genres = genres;
+    if (tags) newParams.tags = tags;
+    if (publishers) newParams.publishers = publishers;
+
+    setSearchParams(newParams);
+  }
+
+  // Helper para mostrar qué filtros están activos
+  const activeFilters = [
+    submitted && `"${submitted}"`,
+    isFavorites && "Mis Favoritos",
+    genres && `Género: ${genres}`,
+    tags && `Tag: ${tags}`,
+    publishers && `Publisher: ${publishers}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 flex flex-col gap-6">
@@ -61,7 +134,11 @@ export default function Games() {
         </p>
       </div>
 
-      <SearchBar value={query} onChange={setQuery} onSubmit={doSearch} />
+      <SearchBar
+        value={inputValue}
+        onChange={setInputValue}
+        onSubmit={doSearch}
+      />
 
       {err && <ErrorBox message={err} />}
 
@@ -73,9 +150,9 @@ export default function Games() {
             <span>
               Resultados: <span className="text-zinc-200">{data.count}</span>
             </span>
-            {submitted ? (
+            {activeFilters ? (
               <span>
-                Filtro: <span className="text-zinc-200">"{submitted}"</span>
+                Filtros: <span className="text-zinc-200">{activeFilters}</span>
               </span>
             ) : (
               <span>Mostrando tendencias</span>
@@ -88,7 +165,18 @@ export default function Games() {
             ))}
           </div>
 
-          <Pagination page={page} setPage={setPage} canPrev={canPrev} canNext={canNext} />
+          {data.results.length === 0 && (
+            <p className="text-center text-zinc-500 py-10">
+              No se encontraron resultados.
+            </p>
+          )}
+
+          <Pagination
+            page={page}
+            setPage={handlePageChange}
+            total={data.count}
+            pageSize={pageSize}
+          />
         </>
       )}
     </div>

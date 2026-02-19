@@ -6,7 +6,10 @@ import ErrorBox from "../components/ErrorBox.jsx";
 
 function stripHtml(html) {
   if (!html) return "";
-  return html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export default function GameDetail() {
@@ -63,7 +66,9 @@ export default function GameDetail() {
   function toggleFav() {
     const numeric = Number(id);
     setFavIds((prev) =>
-      prev.includes(numeric) ? prev.filter((x) => x !== numeric) : [...prev, numeric]
+      prev.includes(numeric)
+        ? prev.filter((x) => x !== numeric)
+        : [...prev, numeric],
     );
   }
 
@@ -88,9 +93,12 @@ export default function GameDetail() {
 
   if (!game) return null;
 
-  const platforms =
-    (game.platforms || []).map((p) => p.platform?.name).filter(Boolean) || [];
-  const genres = (game.genres || []).map((g) => g.name);
+  const platforms = (game.platforms || [])
+    .map((p) => p.platform?.name)
+    .filter(Boolean);
+  const genres = game.genres || [];
+  const tags = game.tags || [];
+  const publishers = game.publishers || [];
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 flex flex-col gap-6">
@@ -107,7 +115,9 @@ export default function GameDetail() {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="h-full w-full grid place-items-center text-zinc-400">Sin imagen</div>
+            <div className="h-full w-full grid place-items-center text-zinc-400">
+              Sin imagen
+            </div>
           )}
         </div>
 
@@ -116,8 +126,8 @@ export default function GameDetail() {
             <div>
               <h1 className="text-3xl font-bold">{game.name}</h1>
               <p className="text-zinc-300 mt-1">
-                ⭐ {game.rating?.toFixed?.(1) ?? game.rating ?? "—"} · Lanzamiento:{" "}
-                {game.released || "—"}
+                ⭐ {game.rating?.toFixed?.(1) ?? game.rating ?? "—"} ·
+                Lanzamiento: {game.released || "—"}
               </p>
             </div>
 
@@ -127,29 +137,75 @@ export default function GameDetail() {
                 "rounded-2xl px-5 py-3 font-semibold transition w-fit",
                 isFav
                   ? "bg-yellow-300 text-zinc-950 hover:bg-yellow-200"
-                  : "border border-zinc-800 text-zinc-200 hover:border-zinc-600"
+                  : "border border-zinc-800 text-zinc-200 hover:border-zinc-600",
               ].join(" ")}
             >
               {isFav ? "★ En favoritos" : "☆ Marcar favorito"}
             </button>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-2xl border border-zinc-900 p-4">
-              <p className="text-xs text-zinc-400">Géneros</p>
-              <p className="mt-1 text-sm">{genres.length ? genres.join(", ") : "—"}</p>
+              <p className="text-xs text-zinc-400 mb-2">Géneros</p>
+              <div className="flex flex-wrap gap-2">
+                {genres.length
+                  ? genres.map((g) => (
+                      <Link
+                        to={`/games?genres=${g.id}`}
+                        key={g.id}
+                        className="text-sm text-zinc-200 hover:text-yellow-300 underline underline-offset-2 decoration-zinc-700"
+                      >
+                        {g.name}
+                      </Link>
+                    ))
+                  : "—"}
+              </div>
             </div>
 
             <div className="rounded-2xl border border-zinc-900 p-4">
-              <p className="text-xs text-zinc-400">Plataformas</p>
-              <p className="mt-1 text-sm">
-                {platforms.length ? platforms.slice(0, 8).join(", ") : "—"}
-              </p>
+              <p className="text-xs text-zinc-400 mb-2">Plataformas</p>
+              <div className="flex flex-wrap gap-1 text-sm">
+                {platforms.length ? platforms.join(", ") : "—"}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 p-4">
+              <p className="text-xs text-zinc-400 mb-2">Publishers</p>
+              <div className="flex flex-wrap gap-2">
+                {publishers.length
+                  ? publishers.map((p) => (
+                      <Link
+                        to={`/publishers/${p.id}`}
+                        key={p.id}
+                        className="text-sm text-zinc-200 hover:text-yellow-300 underline underline-offset-2 decoration-zinc-700"
+                      >
+                        {p.name}
+                      </Link>
+                    ))
+                  : "—"}
+              </div>
             </div>
 
             <div className="rounded-2xl border border-zinc-900 p-4">
               <p className="text-xs text-zinc-400">Metacritic</p>
               <p className="mt-1 text-sm">{game.metacritic ?? "—"}</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-900 p-4">
+            <p className="text-xs text-zinc-400 mb-2">Tags</p>
+            <div className="flex flex-wrap gap-2">
+              {tags.length
+                ? tags.map((t) => (
+                    <Link
+                      to={`/games?tags=${t.id}`}
+                      key={t.id}
+                      className="text-xs px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-600 transition"
+                    >
+                      #{t.name}
+                    </Link>
+                  ))
+                : "—"}
             </div>
           </div>
 
