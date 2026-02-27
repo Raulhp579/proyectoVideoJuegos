@@ -56,7 +56,7 @@ export default function MyEvents() {
                     className="h-full w-full object-cover"
                     onError={(e) => {
                       e.target.src =
-                        "https://via.placeholder.com/400x300/18181b/ffffff?text=Evento";
+                        "https://placehold.co/400x300/18181b/ffffff?text=Evento";
                     }}
                   />
                 </div>

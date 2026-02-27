@@ -51,7 +51,7 @@ export default function Events() {
                     onError={(e) => {
                       // Fallback si la imagen no existe en public
                       e.target.src =
-                        "https://via.placeholder.com/400x300/18181b/ffffff?text=Evento";
+                        "https://placehold.co/400x300/18181b/ffffff?text=Evento";
                     }}
                   />
                 </div>
