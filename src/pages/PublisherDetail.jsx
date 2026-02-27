@@ -1,6 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { getPublisherDetails, getPublisherGames } from "../services/rawg.js";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchPublisherDetailsThunk,
+  fetchGamesThunk,
+} from "../store/slices/gamesSlice";
 import Loader from "../components/Loader.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
 import GameCard from "../components/GameCard.jsx";
@@ -18,63 +22,35 @@ export default function PublisherDetail() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Number(searchParams.get("page")) || 1;
+  const dispatch = useDispatch();
 
-  const [publisher, setPublisher] = useState(null);
-  const [gamesData, setGamesData] = useState({ results: [], count: 0 });
-
-  const [loadingPub, setLoadingPub] = useState(true);
-  const [loadingGames, setLoadingGames] = useState(true);
-  const [err, setErr] = useState("");
+  const {
+    data: publisher,
+    loading: loadingPub,
+    error: err,
+  } = useSelector((state) => state.games.publisherDetail);
+  const {
+    data: gamesResults,
+    count,
+    loading: loadingGames,
+  } = useSelector((state) => state.games.list);
 
   const pageSize = 20;
 
   useEffect(() => {
-    let alive = true;
-    async function loadPub() {
-      setLoadingPub(true);
-      setErr("");
-      try {
-        const res = await getPublisherDetails(id);
-        if (!alive) return;
-        setPublisher(res);
-      } catch (e) {
-        if (!alive) return;
-        setErr(e?.message || "Error al cargar publisher");
-      } finally {
-        if (alive) setLoadingPub(false);
-      }
-    }
-    loadPub();
-    return () => {
-      alive = false;
-    };
-  }, [id]);
+    dispatch(fetchPublisherDetailsThunk(id));
+  }, [dispatch, id]);
 
   useEffect(() => {
-    let alive = true;
-    async function loadGames() {
-      setLoadingGames(true);
-      try {
-        const res = await getPublisherGames(id, { page, pageSize });
-        if (!alive) return;
-        setGamesData({ results: res.results || [], count: res.count || 0 });
-      } catch (e) {
-        console.error(e);
-      } finally {
-        if (alive) setLoadingGames(false);
-      }
-    }
-    loadGames();
-    return () => {
-      alive = false;
-    };
-  }, [id, page]);
+    // Para simplificar, usamos fetchGamesThunk con el publishers filter
+    dispatch(fetchGamesThunk({ publishers: id, page, pageSize }));
+  }, [dispatch, id, page, pageSize]);
 
   const canPrev = page > 1;
   const canNext = useMemo(() => {
-    const total = gamesData?.count || 0;
+    const total = count || 0;
     return page * pageSize < total;
-  }, [gamesData, page]);
+  }, [count, page]);
 
   function handlePageChange(newPage) {
     setSearchParams({ page: newPage });
@@ -143,18 +119,18 @@ export default function PublisherDetail() {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {gamesData.results.map((g) => (
+              {(gamesResults || []).map((g) => (
                 <GameCard key={g.id} game={g} />
               ))}
             </div>
-            {gamesData.results.length === 0 && (
+            {(gamesResults || []).length === 0 && (
               <p className="text-zinc-400">No se encontraron juegos.</p>
             )}
             <div className="mt-6">
               <Pagination
                 page={page}
                 setPage={handlePageChange}
-                total={gamesData.count}
+                total={count}
                 pageSize={pageSize}
               />
             </div>

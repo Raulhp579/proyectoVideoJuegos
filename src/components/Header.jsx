@@ -1,5 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 
 function LinkItem({ to, children }) {
   return (
@@ -29,18 +30,14 @@ export default function Header() {
   // si cambias de página, no arrastres texto raro
   useEffect(() => {
     setQ("");
+    setMenuOpen(false); // also close menu on navigation
   }, [location.pathname]);
 
-  // favoritos (localStorage) para mostrar contador
-  const favCount = useMemo(() => {
-    try {
-      const raw = localStorage.getItem("fav_games_v1");
-      const ids = raw ? JSON.parse(raw) : [];
-      return Array.isArray(ids) ? ids.length : 0;
-    } catch {
-      return 0;
-    }
-  }, [location.pathname]); // se recalcula cuando navegas
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // favoritos (Redux) para mostrar contador
+  const favorites = useSelector((state) => state.games.favorites);
+  const favCount = favorites.length;
 
   function onSubmit(e) {
     e.preventDefault();
@@ -93,10 +90,12 @@ export default function Header() {
           <LinkItem to="/games">Videojuegos</LinkItem>
           <LinkItem to="/publishers">Publishers</LinkItem>
 
+          <LinkItem to="/events">Eventos</LinkItem>
+
           {/* Favoritos */}
           <NavLink
-            to="/games?favorites=true"
-            className="ml-1 inline-flex items-center gap-2 rounded-2xl border border-zinc-800 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-600 transition"
+            to="/favorites"
+            className="ml-1 hidden sm:inline-flex items-center gap-2 rounded-2xl border border-zinc-800 px-3 py-2 text-sm text-zinc-200 hover:border-zinc-600 transition"
             title="Favoritos guardados"
           >
             <span className="text-base leading-none">★</span>
@@ -105,6 +104,49 @@ export default function Header() {
               {favCount}
             </span>
           </NavLink>
+
+          {/* Icono de Usuario con Menú Desplegable */}
+          <div className="relative ml-2">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="h-9 w-9 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center hover:bg-zinc-700 transition relative"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-5 h-5 text-zinc-300"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+                />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-lg py-1 flex flex-col z-50">
+                <div className="px-4 py-2 border-b border-zinc-800">
+                  <p className="text-sm font-semibold text-white">Usuario</p>
+                  <p className="text-xs text-zinc-400">usuario@ejemplo.com</p>
+                </div>
+                <NavLink
+                  to="/favorites"
+                  className="px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
+                >
+                  Mis Favoritos
+                </NavLink>
+                <NavLink
+                  to="/my-events"
+                  className="px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
+                >
+                  Mis Eventos
+                </NavLink>
+              </div>
+            )}
+          </div>
         </nav>
       </div>
 

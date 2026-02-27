@@ -7,6 +7,9 @@ import GameDetail from "./pages/GameDetail.jsx";
 import Publishers from "./pages/Publishers.jsx";
 import PublisherDetail from "./pages/PublisherDetail.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import Favorites from "./pages/Favorites.jsx";
+import Events from "./pages/Events.jsx";
+import MyEvents from "./pages/MyEvents.jsx";
 
 export default function App() {
   return (
@@ -20,6 +23,9 @@ export default function App() {
           <Route path="/games/:id" element={<GameDetail />} />
           <Route path="/publishers" element={<Publishers />} />
           <Route path="/publishers/:id" element={<PublisherDetail />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/my-events" element={<MyEvents />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

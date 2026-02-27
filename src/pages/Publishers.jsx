@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getPublishers } from "../services/rawg.js";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPublishersThunk } from "../store/slices/gamesSlice";
 import SearchBar from "../components/SearchBar.jsx";
 import Loader from "../components/Loader.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
@@ -13,17 +14,21 @@ export default function Publishers() {
   const query = searchParams.get("search") || "";
 
   const [inputValue, setInputValue] = useState(query);
-  const [data, setData] = useState({ results: [], count: 0 });
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const dispatch = useDispatch();
+  const {
+    data: results,
+    count,
+    loading,
+    error: err,
+  } = useSelector((state) => state.games.publishers);
 
   const pageSize = 20;
 
   const canPrev = page > 1;
   const canNext = useMemo(() => {
-    const total = data?.count || 0;
+    const total = count || 0;
     return page * pageSize < total;
-  }, [data, page]);
+  }, [count, page]);
 
   // Sincronizar input con URL si cambia externa (popstate)
   useEffect(() => {
@@ -31,28 +36,8 @@ export default function Publishers() {
   }, [query]);
 
   useEffect(() => {
-    let alive = true;
-
-    async function load() {
-      setLoading(true);
-      setErr("");
-      try {
-        const res = await getPublishers({ page, search: query, pageSize });
-        if (!alive) return;
-        setData({ results: res.results || [], count: res.count || 0 });
-      } catch (e) {
-        if (!alive) return;
-        setErr(e?.message || "Error desconocido");
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      alive = false;
-    };
-  }, [page, query]);
+    dispatch(fetchPublishersThunk({ page, search: query, pageSize }));
+  }, [dispatch, page, query, pageSize]);
 
   function handleSearch() {
     setSearchParams({ search: inputValue.trim(), page: 1 });
@@ -86,7 +71,7 @@ export default function Publishers() {
         <>
           <div className="flex items-center justify-between text-sm text-zinc-400">
             <span>
-              Resultados: <span className="text-zinc-200">{data.count}</span>
+              Resultados: <span className="text-zinc-200">{count}</span>
             </span>
             {query && (
               <span>
@@ -96,7 +81,7 @@ export default function Publishers() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(data.results || []).map((p) => (
+            {(results || []).map((p) => (
               <Link
                 to={`/publishers/${p.id}`}
                 key={p.id}
@@ -128,7 +113,7 @@ export default function Publishers() {
           <Pagination
             page={page}
             setPage={handlePageChange}
-            total={data.count}
+            total={count}
             pageSize={pageSize}
           />
         </>

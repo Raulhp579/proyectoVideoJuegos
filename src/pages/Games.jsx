@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { searchGames } from "../services/rawg.js";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchGamesThunk } from "../store/slices/gamesSlice";
 import SearchBar from "../components/SearchBar.jsx";
 import Loader from "../components/Loader.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
@@ -21,17 +22,21 @@ export default function Games() {
   // Input local para el buscador
   const [inputValue, setInputValue] = useState(submitted);
 
-  const [data, setData] = useState({ results: [], count: 0 });
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const dispatch = useDispatch();
+  const {
+    data: results,
+    count,
+    loading,
+    error: err,
+  } = useSelector((state) => state.games.list);
 
   const pageSize = 20;
 
   const canPrev = page > 1;
   const canNext = useMemo(() => {
-    const total = data?.count || 0;
+    const total = count || 0;
     return page * pageSize < total;
-  }, [data, page]);
+  }, [count, page]);
 
   // Sincronizar input si cambia la URL (por ejemplo navegando atrás)
   useEffect(() => {
@@ -39,56 +44,17 @@ export default function Games() {
   }, [submitted]);
 
   useEffect(() => {
-    let alive = true;
-
-    async function load() {
-      setLoading(true);
-      setErr("");
-
-      let idsToFetch = null;
-      if (isFavorites) {
-        try {
-          const raw = localStorage.getItem("fav_games_v1");
-          const ids = raw ? JSON.parse(raw) : [];
-          if (!ids.length) {
-            // Si no hay favoritos, no llamamos a la API o devolvemos vacío directamente
-            if (alive) {
-              setData({ results: [], count: 0 });
-              setLoading(false);
-            }
-            return;
-          }
-          idsToFetch = ids.join(",");
-        } catch {
-          // error parsing
-        }
-      }
-
-      try {
-        const res = await searchGames({
-          query: submitted,
-          page,
-          pageSize,
-          genres,
-          tags,
-          publishers,
-          ids: idsToFetch,
-        });
-        if (!alive) return;
-        setData({ results: res.results || [], count: res.count || 0 });
-      } catch (e) {
-        if (!alive) return;
-        setErr(e?.message || "Error desconocido");
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      alive = false;
-    };
-  }, [submitted, page, genres, tags, publishers, isFavorites]);
+    dispatch(
+      fetchGamesThunk({
+        query: submitted,
+        page,
+        pageSize,
+        genres,
+        tags,
+        publishers,
+      }),
+    );
+  }, [dispatch, submitted, page, genres, tags, publishers]);
 
   function doSearch() {
     // Al buscar, reseteamos a página 1 y mantenemos filtros si quisieramos,
@@ -148,7 +114,7 @@ export default function Games() {
         <>
           <div className="flex items-center justify-between text-sm text-zinc-400">
             <span>
-              Resultados: <span className="text-zinc-200">{data.count}</span>
+              Resultados: <span className="text-zinc-200">{count}</span>
             </span>
             {activeFilters ? (
               <span>
@@ -160,12 +126,12 @@ export default function Games() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(data.results || []).map((g) => (
+            {(results || []).map((g) => (
               <GameCard key={g.id} game={g} />
             ))}
           </div>
 
-          {data.results.length === 0 && (
+          {results.length === 0 && (
             <p className="text-center text-zinc-500 py-10">
               No se encontraron resultados.
             </p>
@@ -174,7 +140,7 @@ export default function Games() {
           <Pagination
             page={page}
             setPage={handlePageChange}
-            total={data.count}
+            total={count}
             pageSize={pageSize}
           />
         </>

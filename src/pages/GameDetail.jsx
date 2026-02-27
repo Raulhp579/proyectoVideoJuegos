@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getGameDetails } from "../services/rawg.js";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchGameDetailsThunk,
+  toggleFavorite,
+} from "../store/slices/gamesSlice";
 import Loader from "../components/Loader.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
 
@@ -14,62 +18,23 @@ function stripHtml(html) {
 
 export default function GameDetail() {
   const { id } = useParams();
-  const [game, setGame] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const dispatch = useDispatch();
 
-  const storageKey = "fav_games_v1";
+  const {
+    data: game,
+    loading,
+    error: err,
+  } = useSelector((state) => state.games.detail);
+  const favorites = useSelector((state) => state.games.favorites);
 
-  const [favIds, setFavIds] = useState(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const isFav = useMemo(() => favIds.includes(Number(id)), [favIds, id]);
+  const isFav = useMemo(() => favorites.includes(Number(id)), [favorites, id]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(favIds));
-    } catch {
-      // si falla, no pasa nada (modo privado, etc)
-    }
-  }, [favIds]);
-
-  useEffect(() => {
-    let alive = true;
-
-    async function load() {
-      setLoading(true);
-      setErr("");
-      try {
-        const res = await getGameDetails(id);
-        if (!alive) return;
-        setGame(res);
-      } catch (e) {
-        if (!alive) return;
-        setErr(e?.message || "Error desconocido");
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      alive = false;
-    };
-  }, [id]);
+    dispatch(fetchGameDetailsThunk(id));
+  }, [dispatch, id]);
 
   function toggleFav() {
-    const numeric = Number(id);
-    setFavIds((prev) =>
-      prev.includes(numeric)
-        ? prev.filter((x) => x !== numeric)
-        : [...prev, numeric],
-    );
+    dispatch(toggleFavorite(id));
   }
 
   if (loading) {
